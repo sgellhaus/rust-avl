@@ -12,7 +12,7 @@ impl<V: Ord + Copy> AvlTree<V> {
     pub fn insert(&mut self, value: V) {
         match self.root {
             None => {
-                self.replace(Box::new(AvlTreeNode::new(value)));
+                self.replace_root(Box::new(AvlTreeNode::new(value)));
                 return;
             }
             Some(ref mut node) => {
@@ -52,7 +52,7 @@ impl<V: Ord + Copy> AvlTree<V> {
         self.root.as_ref().map(|node| &node.val)
     }
 
-    fn replace(&mut self, other: Box<AvlTreeNode<V>>) -> Option<Box<AvlTreeNode<V>>> {
+    fn replace_root(&mut self, other: Box<AvlTreeNode<V>>) -> Option<Box<AvlTreeNode<V>>> {
         self.root.replace(other)
     }
 
@@ -77,10 +77,10 @@ impl<V: Ord + Copy> AvlTree<V> {
 
         x.right = t2;
         x.update_height();
-        y.left.replace(x);
+        y.left.replace_root(x);
         y.update_height();
 
-        self.replace(y);
+        self.replace_root(y);
     }
 
     fn rotate_right(&mut self) {
@@ -95,10 +95,10 @@ impl<V: Ord + Copy> AvlTree<V> {
 
         y.left = t2;
         y.update_height();
-        x.right.replace(y);
+        x.right.replace_root(y);
         x.update_height();
 
-        self.replace(x);
+        self.replace_root(x);
     }
 
     fn balance(&mut self, value: &V) {
