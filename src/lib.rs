@@ -48,6 +48,10 @@ impl<V: Ord + Copy> AvlTree<V> {
         self.root.as_ref().map_or(0, |node| node.height)
     }
 
+    fn get_val(&self) -> Option<&V> {
+        self.root.as_ref().map(|node| &node.val)
+    }
+
     fn replace(&mut self, other: Box<AvlTreeNode<V>>) -> Option<Box<AvlTreeNode<V>>> {
         self.root.replace(other)
     }
@@ -99,6 +103,7 @@ impl<V: Ord + Copy> AvlTree<V> {
 
     fn balance(&mut self, value: &V) {
         match self.root {
+            None => return,
             Some(ref mut node) => {
                 let rotation = node.get_rotation(value);
                 match rotation {
@@ -123,7 +128,6 @@ impl<V: Ord + Copy> AvlTree<V> {
                     Rotate::Not => (),
                 }
             }
-            None => (),
         }
     }
 }
@@ -197,10 +201,8 @@ impl<V: Ord + Copy> AvlTreeNode<V> {
             1.. => {
                 let left_val = &self
                     .left
-                    .root
-                    .as_ref()
-                    .expect("get_rotation: left does not exist, but bal > 1")
-                    .val;
+                    .get_val()
+                    .expect("get_rotation: left does not exist, but bal > 1");
                 match value.cmp(left_val) {
                     cmp::Ordering::Less => Rotate::Left(InnerRotate::Left),
                     cmp::Ordering::Greater => Rotate::Left(InnerRotate::Right),
@@ -210,10 +212,8 @@ impl<V: Ord + Copy> AvlTreeNode<V> {
             ..-1 => {
                 let right_val = &self
                     .right
-                    .root
-                    .as_ref()
-                    .expect("get_rotation: right does not exist, but bal < -1")
-                    .val;
+                    .get_val()
+                    .expect("get_rotation: right does not exist, but bal < -1");
                 match value.cmp(right_val) {
                     cmp::Ordering::Less => Rotate::Right(InnerRotate::Left),
                     cmp::Ordering::Greater => Rotate::Right(InnerRotate::Right),
