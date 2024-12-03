@@ -65,7 +65,10 @@ impl<V: Ord + Copy> AvlTree<V> {
     fn rotate_left(&mut self) {
         let mut x = self.take_root().expect("Can't rotate left: root is empty");
 
-        let mut y = x.right.take_root().expect("Can't rotate left: no right child");
+        let mut y = x
+            .right
+            .take_root()
+            .expect("Can't rotate left: no right child");
         let t2 = y.left.take_into_subtree();
 
         x.right = t2;
@@ -79,7 +82,11 @@ impl<V: Ord + Copy> AvlTree<V> {
     fn rotate_right(&mut self) {
         let mut y = self.take_root().expect("Can't rotate right: root is empty");
 
-        let mut x = y.left.root.take().expect("Can't rotate right: no left child");
+        let mut x = y
+            .left
+            .root
+            .take()
+            .expect("Can't rotate right: no left child");
         let t2 = x.right.take_into_subtree();
 
         y.left = t2;
