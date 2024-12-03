@@ -63,11 +63,9 @@ impl<V: Ord + Copy> AvlTree<V> {
     }
 
     fn rotate_left(&mut self) {
-        let panic_msg = "Can't rotate right";
+        let mut x = self.take_root().expect("Can't rotate left: root is empty");
 
-        let mut x = self.take_root().expect(panic_msg);
-
-        let mut y = x.right.take_root().expect(panic_msg);
+        let mut y = x.right.take_root().expect("Can't rotate left: no right child");
         let t2 = y.left.take_into_subtree();
 
         x.right = t2;
@@ -79,11 +77,9 @@ impl<V: Ord + Copy> AvlTree<V> {
     }
 
     fn rotate_right(&mut self) {
-        let panic_msg = "Can't rotate right";
+        let mut y = self.take_root().expect("Can't rotate right: root is empty");
 
-        let mut y = self.take_root().expect(panic_msg);
-
-        let mut x = y.left.root.take().expect(panic_msg);
+        let mut x = y.left.root.take().expect("Can't rotate right: no left child");
         let t2 = x.right.take_into_subtree();
 
         y.left = t2;
@@ -201,7 +197,7 @@ impl<V: Ord + Copy> AvlTreeNode<V> {
                 match value.cmp(left_val) {
                     cmp::Ordering::Less => Rotate::Left(InnerRotate::Left),
                     cmp::Ordering::Greater => Rotate::Left(InnerRotate::Right),
-                    _ => panic!("get_rotation: new value and node value are equal - not allowed"),
+                    _ => panic!("get_rotation: new value and node value are equal: not allowed"),
                 }
             }
             ..-1 => {
@@ -214,7 +210,7 @@ impl<V: Ord + Copy> AvlTreeNode<V> {
                 match value.cmp(right_val) {
                     cmp::Ordering::Less => Rotate::Right(InnerRotate::Left),
                     cmp::Ordering::Greater => Rotate::Right(InnerRotate::Right),
-                    _ => panic!("get_rotation: new value and node value are equal - not allowed"),
+                    _ => panic!("get_rotation: new value and node value are equal: not allowed"),
                 }
             }
             _ => Rotate::Not,
