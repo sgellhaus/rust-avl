@@ -1,12 +1,35 @@
-use std::cmp;
+use std::{
+    cmp,
+    fmt::{self, Formatter},
+};
 
 pub struct AvlTree<V> {
     root: Option<Box<AvlTreeNode<V>>>,
 }
 
-impl<V: Ord + Copy> AvlTree<V> {
+impl<V: Ord + Copy + fmt::Display> AvlTree<V> {
     pub fn new() -> AvlTree<V> {
         AvlTree { root: None }
+    }
+
+    pub fn min(&self) -> Option<V> {
+        match self.root {
+            None => None,
+            Some(ref node) => match node.left.root {
+                None => Some(node.val),
+                Some(_) => node.left.min(),
+            },
+        }
+    }
+
+    pub fn max(&self) -> Option<V> {
+        match self.root {
+            None => None,
+            Some(ref node) => match node.right.root {
+                None => Some(node.val),
+                Some(_) => node.right.max(),
+            },
+        }
     }
 
     pub fn insert(&mut self, value: V) {
@@ -108,46 +131,103 @@ impl<V: Ord + Copy> AvlTree<V> {
                 let balance = node.left.get_height() as i64 - node.right.get_height() as i64;
 
                 match balance {
-                    1.. => {
+                    2.. => {
                         let left_val = node
                             .left
                             .get_val()
-                            .expect("get_rotation: left does not exist, but bal > 1");
+                            .expect("balance: left does not exist, but bal > 1");
                         match value.cmp(left_val) {
                             cmp::Ordering::Less => {
                                 self.rotate_right();
-                            },
+                            }
                             cmp::Ordering::Greater => {
                                 node.left.rotate_left();
                                 self.rotate_right();
-                            },
-                            _ => panic!("get_rotation: new value and node value are equal: not allowed"),
+                            }
+                            _ => panic!("balance: new value and node value are equal: not allowed"),
                         }
                     }
                     ..-1 => {
-                        let right_val = node 
+                        let right_val = node
                             .right
                             .get_val()
-                            .expect("get_rotation: right does not exist, but bal < -1");
+                            .expect("balance: right does not exist, but bal < -1");
                         match value.cmp(right_val) {
                             cmp::Ordering::Less => {
                                 node.right.rotate_right();
                                 self.rotate_left();
-                            },
+                            }
                             cmp::Ordering::Greater => {
                                 self.rotate_left();
-                            },
-                            _ => panic!("get_rotation: new value and node value are equal: not allowed"),
+                            }
+                            _ => panic!("balance: new value and node value are equal: not allowed"),
                         }
                     }
-                    _ => (), 
+                    _ => (),
                 }
+            }
+        }
+    }
+
+    fn get_level_string(&self, descend: usize, level: usize, node_char_width: usize) -> String {
+        match self.root {
+            None => match descend {
+                0 => format!("{:node_char_width$}", ""),
+                _ => {
+                    let space_between_nodes =
+                        ((2 as usize).pow(level as u32) - 1) * node_char_width;
+                    format!(
+                        "{}{:space_between_nodes$}{}",
+                        self.get_level_string(descend - 1, level, node_char_width),
+                        "",
+                        self.get_level_string(descend - 1, level, node_char_width)
+                    )
+                }
+            },
+            Some(ref node) => match descend {
+                0 => {
+                    format!("{:^node_char_width$}", node)
+                }
+                _ => {
+                    let space_between_nodes =
+                        ((2 as usize).pow(level as u32) - 1) * node_char_width;
+                    format!(
+                        "{}{:space_between_nodes$}{}",
+                        node.left
+                            .get_level_string(descend - 1, level, node_char_width),
+                        "",
+                        node.right
+                            .get_level_string(descend - 1, level, node_char_width)
+                    )
+                }
+            },
+        }
+    }
+}
+
+impl<V: Ord + Copy + fmt::Display> fmt::Display for AvlTree<V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.root {
+            None => writeln!(f, ""),
+            Some(ref node) => {
+                let node_char_width = format!("{}", node).len();
+                let mut tree = String::new();
+                for descend in 0..node.height {
+                    let initial_space = ((2 as usize).pow((node.height - descend - 1) as u32) - 1)
+                        * node_char_width;
+                    tree.push_str(&format!(
+                        "{:initial_space$}{}\n",
+                        "",
+                        &self.get_level_string(descend, node.height - descend, node_char_width)
+                    ));
+                }
+                write!(f, "{}", tree)
             }
         }
     }
 }
 
-impl<V: Ord + Copy> IntoIterator for AvlTree<V> {
+impl<V: Ord + Copy + fmt::Display> IntoIterator for AvlTree<V> {
     type Item = V;
     type IntoIter = <Vec<V> as IntoIterator>::IntoIter;
 
@@ -175,7 +255,7 @@ impl<V: Ord + Copy> IntoIterator for AvlTree<V> {
     }
 }
 
-type Height = u64;
+type Height = usize;
 
 struct AvlTreeNode<V> {
     val: V,
@@ -184,7 +264,7 @@ struct AvlTreeNode<V> {
     right: AvlTree<V>,
 }
 
-impl<V: Ord + Copy> AvlTreeNode<V> {
+impl<V: Ord + Copy + fmt::Display> AvlTreeNode<V> {
     fn new(value: V) -> AvlTreeNode<V> {
         AvlTreeNode {
             val: value,
@@ -196,5 +276,11 @@ impl<V: Ord + Copy> AvlTreeNode<V> {
 
     fn update_height(&mut self) {
         self.height = 1 + cmp::max(self.left.get_height(), self.right.get_height());
+    }
+}
+
+impl<V: fmt::Display> fmt::Display for AvlTreeNode<V> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.val)
     }
 }
