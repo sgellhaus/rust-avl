@@ -3,14 +3,20 @@ use avl::AvlTree;
 fn main() {
     let mut tree = AvlTree::new();
 
-    tree.insert(11);
     tree.insert(21);
     tree.insert(34);
     tree.insert(14);
     tree.insert(11);
-
-    println!("{}", tree.contains(1));
-    println!("{}", tree.contains(11));
+    tree.insert(15);
+    tree.insert(16);
+    tree.insert(22);
+    tree.insert(23);
+    tree.insert(35);
+    tree.insert(24);
+    tree.insert(25);
+    tree.insert(1000);
+    tree.insert(1001);
+    println!("{}", tree);
 
     let v: Vec<i32> = tree.into_iter().collect();
 
