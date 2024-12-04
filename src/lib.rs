@@ -35,7 +35,7 @@ impl<V: Ord + Copy + fmt::Display> AvlTree<V> {
     pub fn insert(&mut self, value: V) {
         match self.root {
             None => {
-                self.replace_root(Box::new(AvlTreeNode::new(value)));
+                self.root.replace(Box::new(AvlTreeNode::new(value)));
                 return;
             }
             Some(ref mut node) => {
@@ -75,53 +75,39 @@ impl<V: Ord + Copy + fmt::Display> AvlTree<V> {
         self.root.as_ref().map(|node| &node.val)
     }
 
-    fn replace_root(&mut self, other: Box<AvlTreeNode<V>>) -> Option<Box<AvlTreeNode<V>>> {
-        self.root.replace(other)
-    }
-
-    fn take_into_subtree(&mut self) -> AvlTree<V> {
-        AvlTree {
-            root: self.root.take(),
-        }
-    }
-
-    fn take_root(&mut self) -> Option<Box<AvlTreeNode<V>>> {
-        self.root.take()
-    }
-
     fn rotate_left(&mut self) {
-        let mut x = self.take_root().expect("Can't rotate left: root is empty");
+        let mut x = self.root.take().expect("Can't rotate left: root is empty");
 
         let mut y = x
             .right
-            .take_root()
+            .root.take()
             .expect("Can't rotate left: no right child");
-        let t2 = y.left.take_into_subtree();
+        let t2 = y.left.root.take();
 
-        x.right = t2;
+        x.right.root = t2;
         x.update_height();
-        y.left.replace_root(x);
+        y.left.root.replace(x);
         y.update_height();
 
-        self.replace_root(y);
+        self.root.replace(y);
     }
 
     fn rotate_right(&mut self) {
-        let mut y = self.take_root().expect("Can't rotate right: root is empty");
+        let mut y = self.root.take().expect("Can't rotate right: root is empty");
 
         let mut x = y
             .left
             .root
             .take()
             .expect("Can't rotate right: no left child");
-        let t2 = x.right.take_into_subtree();
+        let t2 = x.right.root.take();
 
-        y.left = t2;
+        y.left.root = t2;
         y.update_height();
-        x.right.replace_root(y);
+        x.right.root.replace(y);
         x.update_height();
 
-        self.replace_root(x);
+        self.root.replace(x);
     }
 
     fn balance(&mut self, value: &V) {
@@ -163,7 +149,7 @@ impl<V: Ord + Copy + fmt::Display> AvlTree<V> {
                             _ => panic!("balance: new value and node value are equal: not allowed"),
                         }
                     }
-                    _ => (),
+                    -1..=1 => (),
                 }
             }
         }
@@ -236,23 +222,27 @@ impl<V: Ord + Copy + fmt::Display> IntoIterator for AvlTree<V> {
     type IntoIter = <Vec<V> as IntoIterator>::IntoIter;
 
     fn into_iter(mut self) -> Self::IntoIter {
-        let mut cur_tree = self.take_into_subtree();
+        let mut cur_node = self.root.take();
 
-        let mut stack: Vec<AvlTree<V>> = Vec::new();
+        let mut stack: Vec<AvlTreeNode<V>> = Vec::new();
         let mut queue: Vec<V> = Vec::new();
 
-        while cur_tree.root.is_some() || stack.len() > 0 {
-            while cur_tree.root.is_some() {
-                let mut node = cur_tree;
-                cur_tree = node.root.as_mut().unwrap().left.take_into_subtree();
-                stack.push(node);
+        loop {
+            while let Some(mut node) = cur_node {
+                cur_node = node.left.root.take();
+                stack.push(*node);
             }
 
-            let handle_node = *stack.pop().unwrap().root.unwrap();
-
-            queue.push(handle_node.val);
-
-            cur_tree = handle_node.right;
+            match stack.pop() {
+                Some(mut node) => {
+                    queue.push(node.val);
+                    cur_node = node.right.root.take();
+                }
+                None => match cur_node {
+                    Some(_) => continue,
+                    None => break
+                },
+            }
         }
 
         queue.into_iter()
