@@ -186,7 +186,7 @@ impl<V: Ord + Copy + fmt::Display> AvlTree<V> {
             },
             Some(ref node) => match descend {
                 0 => {
-                    format!("{:^node_char_width$}", node)
+                    format!("{:^node_char_width$}", format!("{}", node))
                 }
                 _ => {
                     let space_between_nodes =
@@ -210,7 +210,11 @@ impl<V: Ord + Copy + fmt::Display> fmt::Display for AvlTree<V> {
         match self.root {
             None => writeln!(f, ""),
             Some(ref node) => {
-                let node_char_width = format!("{}", node).len();
+                let node_char_width = format!(
+                    "{}",
+                    self.max().expect("No max even though root node exists")
+                )
+                .len();
                 let mut tree = String::new();
                 for descend in 0..node.height {
                     let initial_space = ((2 as usize).pow((node.height - descend - 1) as u32) - 1)
