@@ -105,27 +105,42 @@ impl<V: Ord + Copy> AvlTree<V> {
         match self.root {
             None => return,
             Some(ref mut node) => {
-                let rotation = node.get_rotation(value);
-                match rotation {
-                    Rotate::Left(inner_rotation) => match inner_rotation {
-                        InnerRotate::Left => {
-                            self.rotate_right();
+                let balance = node.left.get_height() as i64 - node.right.get_height() as i64;
+
+                match balance {
+                    1.. => {
+                        let left_val = node
+                            .left
+                            .get_val()
+                            .expect("get_rotation: left does not exist, but bal > 1");
+                        match value.cmp(left_val) {
+                            cmp::Ordering::Less => {
+                                self.rotate_right();
+                            },
+                            cmp::Ordering::Greater => {
+                                node.left.rotate_left();
+                                self.rotate_right();
+                            },
+                            _ => panic!("get_rotation: new value and node value are equal: not allowed"),
                         }
-                        InnerRotate::Right => {
-                            node.left.rotate_left();
-                            self.rotate_right();
+                    }
+                    ..-1 => {
+                        let right_val = node 
+                            .right
+                            .get_val()
+                            .expect("get_rotation: right does not exist, but bal < -1");
+                        match value.cmp(right_val) {
+                            cmp::Ordering::Less => {
+                                node.right.rotate_right();
+                                self.rotate_left();
+                            },
+                            cmp::Ordering::Greater => {
+                                self.rotate_left();
+                            },
+                            _ => panic!("get_rotation: new value and node value are equal: not allowed"),
                         }
-                    },
-                    Rotate::Right(inner_rotation) => match inner_rotation {
-                        InnerRotate::Left => {
-                            node.right.rotate_right();
-                            self.rotate_left();
-                        }
-                        InnerRotate::Right => {
-                            self.rotate_left();
-                        }
-                    },
-                    Rotate::Not => (),
+                    }
+                    _ => (), 
                 }
             }
         }
@@ -169,17 +184,6 @@ struct AvlTreeNode<V> {
     right: AvlTree<V>,
 }
 
-enum InnerRotate {
-    Left,
-    Right,
-}
-
-enum Rotate {
-    Left(InnerRotate),
-    Right(InnerRotate),
-    Not,
-}
-
 impl<V: Ord + Copy> AvlTreeNode<V> {
     fn new(value: V) -> AvlTreeNode<V> {
         AvlTreeNode {
@@ -192,35 +196,5 @@ impl<V: Ord + Copy> AvlTreeNode<V> {
 
     fn update_height(&mut self) {
         self.height = 1 + cmp::max(self.left.get_height(), self.right.get_height());
-    }
-
-    fn get_rotation(&self, value: &V) -> Rotate {
-        let balance = self.left.get_height() as i64 - self.right.get_height() as i64;
-
-        match balance {
-            1.. => {
-                let left_val = &self
-                    .left
-                    .get_val()
-                    .expect("get_rotation: left does not exist, but bal > 1");
-                match value.cmp(left_val) {
-                    cmp::Ordering::Less => Rotate::Left(InnerRotate::Left),
-                    cmp::Ordering::Greater => Rotate::Left(InnerRotate::Right),
-                    _ => panic!("get_rotation: new value and node value are equal: not allowed"),
-                }
-            }
-            ..-1 => {
-                let right_val = &self
-                    .right
-                    .get_val()
-                    .expect("get_rotation: right does not exist, but bal < -1");
-                match value.cmp(right_val) {
-                    cmp::Ordering::Less => Rotate::Right(InnerRotate::Left),
-                    cmp::Ordering::Greater => Rotate::Right(InnerRotate::Right),
-                    _ => panic!("get_rotation: new value and node value are equal: not allowed"),
-                }
-            }
-            _ => Rotate::Not,
-        }
     }
 }
