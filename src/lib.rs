@@ -149,8 +149,7 @@ impl<V: Ord + Copy + fmt::Display> AvlTree<V> {
             None => match descend_by {
                 0 => format!("{:node_str_width$}", ""),
                 _ => {
-                    let space_between_nodes =
-                        ((2 as usize).pow(level as u32) - 1) * node_str_width;
+                    let space_between_nodes = ((2 as usize).pow(level as u32) - 1) * node_str_width;
                     format!(
                         "{}{:space_between_nodes$}{}",
                         self.get_level_string(descend_by - 1, level, node_str_width),
@@ -164,8 +163,7 @@ impl<V: Ord + Copy + fmt::Display> AvlTree<V> {
                     format!("{:^node_str_width$}", format!("{}", node))
                 }
                 _ => {
-                    let space_between_nodes =
-                        ((2 as usize).pow(level as u32) - 1) * node_str_width;
+                    let space_between_nodes = ((2 as usize).pow(level as u32) - 1) * node_str_width;
                     format!(
                         "{}{:space_between_nodes$}{}",
                         node.left
@@ -192,12 +190,17 @@ impl<V: Ord + Copy + fmt::Display> fmt::Display for AvlTree<V> {
                 .len();
                 let mut tree = String::new();
                 for descend_by in 0..node.height {
-                    let initial_space = ((2 as usize).pow((node.height - descend_by - 1) as u32) - 1)
+                    let initial_space = ((2 as usize).pow((node.height - descend_by - 1) as u32)
+                        - 1)
                         * node_char_width;
                     tree.push_str(&format!(
                         "{:initial_space$}{}\n",
                         "",
-                        &self.get_level_string(descend_by, node.height - descend_by, node_char_width)
+                        &self.get_level_string(
+                            descend_by,
+                            node.height - descend_by,
+                            node_char_width
+                        )
                     ));
                 }
                 write!(f, "{}", tree)
@@ -229,7 +232,7 @@ impl<V: Ord + Copy + fmt::Display> IntoIterator for AvlTree<V> {
                 }
                 None => match cur_node {
                     Some(_) => continue,
-                    None => break
+                    None => break,
                 },
             }
         }
@@ -261,7 +264,7 @@ impl<V: Ord + Copy + fmt::Display> AvlTreeNode<V> {
         self.height = 1 + cmp::max(self.left.get_height(), self.right.get_height());
     }
 
-    fn min(&self) -> V{
+    fn min(&self) -> V {
         let mut min_node = self;
         while let Some(ref l_node) = min_node.left.root {
             min_node = l_node;
@@ -269,7 +272,7 @@ impl<V: Ord + Copy + fmt::Display> AvlTreeNode<V> {
         min_node.val
     }
 
-    fn max(&self) -> V{
+    fn max(&self) -> V {
         let mut max_node = self;
         while let Some(ref r_node) = max_node.right.root {
             max_node = r_node;
