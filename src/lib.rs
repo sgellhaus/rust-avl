@@ -20,50 +20,48 @@ impl<V: Ord> AvlTree<V> {
         self.root.as_ref().map(|node| node.max())
     }
 
-
     pub fn remove(&mut self, value: &V) -> bool {
         match self.root {
             None => {
                 return false;
             }
-            Some(ref mut node) => {
-                match value.cmp(&node.val) {
-                    cmp::Ordering::Less => {
-                        node.left.remove(value);
-                    }
-                    cmp::Ordering::Greater => {
-                        node.right.remove(value);
-                    }
-                    cmp::Ordering::Equal => {
-                        match (node.left.root.take(), node.right.root.take()) {
-                            (None, None) => {
-                                self.root.take();
-                                return true;
-                            }
-                            (Some(rnode), None) => {
-                                self.root.replace(rnode);
-                                return true;
-                            }
-                            (None, Some(rnode)) => {
-                                self.root.replace(rnode);
-                                return true;
-                            }
-                            (Some(lnode), Some(rnode)) => {
-                                let mut right_tree = AvlTree{root: Some(rnode)};
-                                let mut new_node = right_tree.take_min_node();
-
-                                new_node.left = AvlTree{root: Some(lnode)};
-                                new_node.right = right_tree;
-                                
-                                self.root.replace(new_node);
-                            }
-                        }
-                    }
+            Some(ref mut node) => match value.cmp(&node.val) {
+                cmp::Ordering::Less => {
+                    node.left.remove(value);
                 }
-            }
+                cmp::Ordering::Greater => {
+                    node.right.remove(value);
+                }
+                cmp::Ordering::Equal => match (node.left.root.take(), node.right.root.take()) {
+                    (None, None) => {
+                        self.root.take();
+                        return true;
+                    }
+                    (Some(rnode), None) => {
+                        self.root.replace(rnode);
+                        return true;
+                    }
+                    (None, Some(rnode)) => {
+                        self.root.replace(rnode);
+                        return true;
+                    }
+                    (Some(lnode), Some(rnode)) => {
+                        let mut right_tree = AvlTree { root: Some(rnode) };
+                        let mut new_node = right_tree.take_min_node();
+
+                        new_node.left = AvlTree { root: Some(lnode) };
+                        new_node.right = right_tree;
+
+                        self.root.replace(new_node);
+                    }
+                },
+            },
         }
 
-        self.root.as_mut().expect("remove: self is empty").update_height();
+        self.root
+            .as_mut()
+            .expect("remove: self is empty")
+            .update_height();
 
         self.remove_balance();
 
@@ -128,76 +126,68 @@ impl<V: Ord> AvlTree<V> {
     fn balance(&mut self, value: &V) {
         match self.root {
             None => return,
-            Some(ref mut node) => {
-                match node.get_balance() {
-                    2.. => {
-                        let left_val = node
-                            .left
-                            .get_val()
-                            .expect("balance: left does not exist, but bal > 1");
-                        match value.cmp(left_val) {
-                            cmp::Ordering::Less => {
-                                self.rotate_right();
-                            }
-                            cmp::Ordering::Greater => {
-                                node.left.rotate_left();
-                                self.rotate_right();
-                            }
-                            _ => panic!("balance: new value and node value are equal: not allowed"),
+            Some(ref mut node) => match node.get_balance() {
+                2.. => {
+                    let left_val = node
+                        .left
+                        .get_val()
+                        .expect("balance: left does not exist, but bal > 1");
+                    match value.cmp(left_val) {
+                        cmp::Ordering::Less => {
+                            self.rotate_right();
                         }
-                    }
-                    ..-1 => {
-                        let right_val = node
-                            .right
-                            .get_val()
-                            .expect("balance: right does not exist, but bal < -1");
-                        match value.cmp(right_val) {
-                            cmp::Ordering::Less => {
-                                node.right.rotate_right();
-                                self.rotate_left();
-                            }
-                            cmp::Ordering::Greater => {
-                                self.rotate_left();
-                            }
-                            _ => panic!("balance: new value and node value are equal: not allowed"),
+                        cmp::Ordering::Greater => {
+                            node.left.rotate_left();
+                            self.rotate_right();
                         }
+                        _ => panic!("balance: new value and node value are equal: not allowed"),
                     }
-                    -1..=1 => (),
                 }
-            }
+                ..-1 => {
+                    let right_val = node
+                        .right
+                        .get_val()
+                        .expect("balance: right does not exist, but bal < -1");
+                    match value.cmp(right_val) {
+                        cmp::Ordering::Less => {
+                            node.right.rotate_right();
+                            self.rotate_left();
+                        }
+                        cmp::Ordering::Greater => {
+                            self.rotate_left();
+                        }
+                        _ => panic!("balance: new value and node value are equal: not allowed"),
+                    }
+                }
+                -1..=1 => (),
+            },
         }
     }
 
     fn remove_balance(&mut self) {
         match self.root {
             None => return,
-            Some(ref mut node) => {
-                match node.get_balance() {
-                    2.. => {
-                        match node.left.get_balance() {
-                            ..=-1 => {
-                                node.left.rotate_left();
-                                self.rotate_right();
-                            }
-                            0.. => {
-                                self.rotate_right();
-                            }
-                        }
+            Some(ref mut node) => match node.get_balance() {
+                2.. => match node.left.get_balance() {
+                    ..=-1 => {
+                        node.left.rotate_left();
+                        self.rotate_right();
                     }
-                    ..-1 => {
-                        match node.right.get_balance() {
-                            ..=0 => {
-                                self.rotate_left();
-                            }
-                            1.. => {
-                                node.right.rotate_right();
-                                self.rotate_left();
-                            }
-                        }
+                    0.. => {
+                        self.rotate_right();
                     }
-                    -1..=1 => (),
-                }
-            }
+                },
+                ..-1 => match node.right.get_balance() {
+                    ..=0 => {
+                        self.rotate_left();
+                    }
+                    1.. => {
+                        node.right.rotate_right();
+                        self.rotate_left();
+                    }
+                },
+                -1..=1 => (),
+            },
         }
     }
 
@@ -209,16 +199,14 @@ impl<V: Ord> AvlTree<V> {
         match self.root.as_mut() {
             None => panic!("take_min: too low"),
             Some(node) => match node.left.root.as_ref() {
-                None => {
-                    return self.root.take().expect("take_min: should exist now")
-                },
+                None => return self.root.take().expect("take_min: should exist now"),
                 Some(_) => {
                     let retval = node.left.take_min_node();
                     node.update_height();
                     self.remove_balance();
                     return retval;
-                },
-            }
+                }
+            },
         }
     }
 }

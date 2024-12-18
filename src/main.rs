@@ -20,7 +20,7 @@ fn main() {
 
     tree.remove(&23);
     println!("{}", tree);
-    
+
     tree.remove(&35);
     println!("{}", tree);
     tree.remove(&34);
