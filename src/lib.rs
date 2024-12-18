@@ -7,44 +7,70 @@ pub struct AvlTree<V> {
     root: Option<Box<AvlTreeNode<V>>>,
 }
 
-impl<V: Ord + Copy + fmt::Display> AvlTree<V> {
+impl<V: Ord> AvlTree<V> {
     pub fn new() -> AvlTree<V> {
         AvlTree { root: None }
     }
 
-    pub fn min(&self) -> Option<V> {
+    pub fn min(&self) -> Option<&V> {
         self.root.as_ref().map(|node| node.min())
     }
 
-    pub fn max(&self) -> Option<V> {
+    pub fn max(&self) -> Option<&V> {
         self.root.as_ref().map(|node| node.max())
     }
 
-    pub fn insert(&mut self, value: V) {
+
+    pub fn remove(&mut self, value: &V) -> bool {
         match self.root {
             None => {
-                self.root.replace(Box::new(AvlTreeNode::new(value)));
-                return;
+                return false;
             }
             Some(ref mut node) => {
                 match value.cmp(&node.val) {
                     cmp::Ordering::Less => {
-                        node.left.insert(value);
+                        node.left.remove(value);
                     }
                     cmp::Ordering::Greater => {
-                        node.right.insert(value);
+                        node.right.remove(value);
                     }
-                    cmp::Ordering::Equal => return,
-                };
+                    cmp::Ordering::Equal => {
+                        match (node.left.root.take(), node.right.root.take()) {
+                            (None, None) => {
+                                self.root.take();
+                                return true;
+                            }
+                            (Some(rnode), None) => {
+                                self.root.replace(rnode);
+                                return true;
+                            }
+                            (None, Some(rnode)) => {
+                                self.root.replace(rnode);
+                                return true;
+                            }
+                            (Some(lnode), Some(rnode)) => {
+                                let mut right_tree = AvlTree{root: Some(rnode)};
+                                let mut new_node = right_tree.take_min_node();
 
-                node.update_height();
+                                new_node.left = AvlTree{root: Some(lnode)};
+                                new_node.right = right_tree;
+                                
+                                self.root.replace(new_node);
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        self.balance(&value);
+        self.root.as_mut().expect("remove: self is empty").update_height();
+
+        self.remove_balance();
+
+        return true;
     }
 
-    pub fn contains(&self, value: V) -> bool {
+    pub fn contains(&self, value: &V) -> bool {
         match self.root {
             None => false,
             Some(ref node) => match value.cmp(&node.val) {
@@ -103,9 +129,7 @@ impl<V: Ord + Copy + fmt::Display> AvlTree<V> {
         match self.root {
             None => return,
             Some(ref mut node) => {
-                let balance = node.left.get_height() as i64 - node.right.get_height() as i64;
-
-                match balance {
+                match node.get_balance() {
                     2.. => {
                         let left_val = node
                             .left
@@ -144,6 +168,89 @@ impl<V: Ord + Copy + fmt::Display> AvlTree<V> {
         }
     }
 
+    fn remove_balance(&mut self) {
+        match self.root {
+            None => return,
+            Some(ref mut node) => {
+                match node.get_balance() {
+                    2.. => {
+                        match node.left.get_balance() {
+                            ..=-1 => {
+                                node.left.rotate_left();
+                                self.rotate_right();
+                            }
+                            0.. => {
+                                self.rotate_right();
+                            }
+                        }
+                    }
+                    ..-1 => {
+                        match node.right.get_balance() {
+                            ..=0 => {
+                                self.rotate_left();
+                            }
+                            1.. => {
+                                node.right.rotate_right();
+                                self.rotate_left();
+                            }
+                        }
+                    }
+                    -1..=1 => (),
+                }
+            }
+        }
+    }
+
+    fn get_balance(&self) -> isize {
+        self.root.as_ref().map_or(0, |n| (*n).get_balance())
+    }
+
+    fn take_min_node(&mut self) -> Box<AvlTreeNode<V>> {
+        match self.root.as_mut() {
+            None => panic!("take_min: too low"),
+            Some(node) => match node.left.root.as_ref() {
+                None => {
+                    return self.root.take().expect("take_min: should exist now")
+                },
+                Some(_) => {
+                    let retval = node.left.take_min_node();
+                    node.update_height();
+                    self.remove_balance();
+                    return retval;
+                },
+            }
+        }
+    }
+}
+
+impl<V: Ord + Copy> AvlTree<V> {
+    pub fn insert(&mut self, value: V) {
+        let value_ref = &value;
+        match self.root {
+            None => {
+                self.root.replace(Box::new(AvlTreeNode::new(value)));
+                return;
+            }
+            Some(ref mut node) => {
+                match value.cmp(&node.val) {
+                    cmp::Ordering::Less => {
+                        node.left.insert(value);
+                    }
+                    cmp::Ordering::Greater => {
+                        node.right.insert(value);
+                    }
+                    cmp::Ordering::Equal => return,
+                };
+
+                node.update_height();
+            }
+        }
+
+        self.balance(value_ref);
+    }
+}
+
+impl<V: fmt::Display> AvlTree<V> {
     fn get_level_string(&self, descend_by: usize, level: usize, node_str_width: usize) -> String {
         match self.root {
             None => match descend_by {
@@ -178,7 +285,7 @@ impl<V: Ord + Copy + fmt::Display> AvlTree<V> {
     }
 }
 
-impl<V: Ord + Copy + fmt::Display> fmt::Display for AvlTree<V> {
+impl<V: Ord + fmt::Display> fmt::Display for AvlTree<V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.root {
             None => writeln!(f, ""),
@@ -209,7 +316,7 @@ impl<V: Ord + Copy + fmt::Display> fmt::Display for AvlTree<V> {
     }
 }
 
-impl<V: Ord + Copy + fmt::Display> IntoIterator for AvlTree<V> {
+impl<V: Ord> IntoIterator for AvlTree<V> {
     type Item = V;
     type IntoIter = <Vec<V> as IntoIterator>::IntoIter;
 
@@ -250,7 +357,7 @@ struct AvlTreeNode<V> {
     right: AvlTree<V>,
 }
 
-impl<V: Ord + Copy + fmt::Display> AvlTreeNode<V> {
+impl<V: Ord> AvlTreeNode<V> {
     fn new(value: V) -> AvlTreeNode<V> {
         AvlTreeNode {
             val: value,
@@ -264,20 +371,24 @@ impl<V: Ord + Copy + fmt::Display> AvlTreeNode<V> {
         self.height = 1 + cmp::max(self.left.get_height(), self.right.get_height());
     }
 
-    fn min(&self) -> V {
+    fn get_balance(&self) -> isize {
+        self.left.get_height() as isize - self.right.get_height() as isize
+    }
+
+    fn min(&self) -> &V {
         let mut min_node = self;
         while let Some(ref l_node) = min_node.left.root {
             min_node = l_node;
         }
-        min_node.val
+        &min_node.val
     }
 
-    fn max(&self) -> V {
+    fn max(&self) -> &V {
         let mut max_node = self;
         while let Some(ref r_node) = max_node.right.root {
             max_node = r_node;
         }
-        max_node.val
+        &max_node.val
     }
 }
 

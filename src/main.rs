@@ -18,7 +18,17 @@ fn main() {
     tree.insert(1001);
     println!("{}", tree);
 
-    let v: Vec<i32> = tree.into_iter().collect();
+    tree.remove(&23);
+    println!("{}", tree);
+    
+    tree.remove(&35);
+    println!("{}", tree);
+    tree.remove(&34);
+    println!("{}", tree);
 
-    println!("{:?}", v);
+    tree.remove(&1000);
+    println!("{}", tree);
+    // let v: Vec<i32> = tree.into_iter().collect();
+
+    // println!("{:?}", v);
 }
