@@ -71,7 +71,7 @@ impl<V: Ord> AvlTree<V> {
 
         self.remove_balance();
 
-        return true;
+        true
     }
 
     pub fn contains(&self, value: &V) -> bool {
@@ -131,7 +131,7 @@ impl<V: Ord> AvlTree<V> {
 
     fn balance(&mut self, value: &V) {
         match self.root {
-            None => return,
+            None => (),
             Some(ref mut node) => match node.get_balance() {
                 2.. => {
                     let left_val = node
@@ -172,7 +172,7 @@ impl<V: Ord> AvlTree<V> {
 
     fn remove_balance(&mut self) {
         match self.root {
-            None => return,
+            None => (),
             Some(ref mut node) => match node.get_balance() {
                 2.. => match node.left.get_balance() {
                     ..=-1 => {
@@ -205,12 +205,12 @@ impl<V: Ord> AvlTree<V> {
         match self.root.as_mut() {
             None => panic!("take_min: too low"),
             Some(node) => match node.left.root.as_ref() {
-                None => return self.root.take().expect("take_min: should exist now"),
+                None => self.root.take().expect("take_min: should exist now"),
                 Some(_) => {
                     let retval = node.left.take_min_node();
                     node.update_height();
                     self.remove_balance();
-                    return retval;
+                    retval
                 }
             },
         }
@@ -249,7 +249,7 @@ impl<V: fmt::Display> AvlTree<V> {
             None => match descend_by {
                 0 => format!("{:node_str_width$}", ""),
                 _ => {
-                    let space_between_nodes = ((2 as usize).pow(level as u32) - 1) * node_str_width;
+                    let space_between_nodes = (2_usize.pow(level as u32) - 1) * node_str_width;
                     format!(
                         "{}{:space_between_nodes$}{}",
                         self.get_level_string(descend_by - 1, level, node_str_width),
@@ -263,7 +263,7 @@ impl<V: fmt::Display> AvlTree<V> {
                     format!("{:^node_str_width$}", format!("{}", node))
                 }
                 _ => {
-                    let space_between_nodes = ((2 as usize).pow(level as u32) - 1) * node_str_width;
+                    let space_between_nodes = (2_usize.pow(level as u32) - 1) * node_str_width;
                     format!(
                         "{}{:space_between_nodes$}{}",
                         node.left
@@ -281,7 +281,7 @@ impl<V: fmt::Display> AvlTree<V> {
 impl<V: Ord + fmt::Display> fmt::Display for AvlTree<V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.root {
-            None => writeln!(f, ""),
+            None => writeln!(f),
             Some(ref node) => {
                 let node_char_width = format!(
                     "{}",
@@ -290,7 +290,7 @@ impl<V: Ord + fmt::Display> fmt::Display for AvlTree<V> {
                 .len();
                 let mut tree = String::new();
                 for descend_by in 0..node.height {
-                    let initial_space = ((2 as usize).pow((node.height - descend_by - 1) as u32)
+                    let initial_space = (2_usize.pow((node.height - descend_by - 1) as u32)
                         - 1)
                         * node_char_width;
                     tree.push_str(&format!(
