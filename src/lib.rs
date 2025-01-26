@@ -7,9 +7,15 @@ pub struct AvlTree<V> {
     root: Option<Box<AvlTreeNode<V>>>,
 }
 
+impl<V> Default for AvlTree<V> {
+    fn default() -> Self {
+        AvlTree { root: None }
+    }
+}
+
 impl<V: Ord> AvlTree<V> {
     pub fn new() -> AvlTree<V> {
-        AvlTree { root: None }
+        AvlTree::default()
     }
 
     pub fn min(&self) -> Option<&V> {
@@ -213,7 +219,6 @@ impl<V: Ord> AvlTree<V> {
 
 impl<V: Ord + Copy> AvlTree<V> {
     pub fn insert(&mut self, value: V) {
-        let value_ref = &value;
         match self.root {
             None => {
                 self.root.replace(Box::new(AvlTreeNode::new(value)));
@@ -234,7 +239,7 @@ impl<V: Ord + Copy> AvlTree<V> {
             }
         }
 
-        self.balance(value_ref);
+        self.balance(&value);
     }
 }
 
